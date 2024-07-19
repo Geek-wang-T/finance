@@ -37,6 +37,22 @@ def is_between_time(begin_time, end_time):
         return False
 
 
+def _init():
+    """
+    实现T+1交易策略，每天早上9：00执行
+    Returns:
+    null
+    """
+    res = jsonpath(a, '$..name')
+    for user_name in res:
+        # node为该用户的所有信息
+        node = jsonpath(a, f'$..[?(@.name == \'{user_name}\')]')[0]
+        # stock_hold为该用户所持有的所有股票信息
+        stock_hold = jsonpath(node, '$.quote')[0]
+        for i in stock_hold:
+            i["num_today"] = 0
+
+
 def search_acc(user_name: str, a: dict):
     """
     用户查询自己的资金、交易记录、股票持有情况
@@ -89,7 +105,10 @@ def find_single_price(stock_code: str):
         formatted_time = datetime.datetime.now().strftime('%Y-%m-%d') + " 15:00"
         money = df.loc[formatted_time, '开盘']
     else:
-        formatted_time = datetime.datetime.now().strftime('%Y-%m-%d') + " 15:00"
+        current_date = datetime.date.today()
+        previous_date = current_date - datetime.timedelta(day=1)
+        formatted_time = previous_date.strftime("%Y-%m-%d") + " 15:00"
+        money = df.loc[formatted_time, '开盘']
     return money
 
 
@@ -272,8 +291,8 @@ def sell_stock(user_name: str, a: dict, code: str, num: int):
         if code not in hold:
             return False
         else:
-            num_all = jsonpath(node,f'$.quote[?(@.code == \'{code}\')]')[0]["num_all"]
-            num_today = jsonpath(node,f'$.quote[?(@.code == \'{code}\')]')[0]["num_today"]
+            num_all = jsonpath(node, f'$.quote[?(@.code == \'{code}\')]')[0]["num_all"]
+            num_today = jsonpath(node, f'$.quote[?(@.code == \'{code}\')]')[0]["num_today"]
             print(num_all)
             print(num_today)
             if num > num_all - num_today:
@@ -299,3 +318,24 @@ def sell_stock(user_name: str, a: dict, code: str, num: int):
                 return True
     else:
         return False
+
+
+def trade():
+    flag1, money1, record1, stock_hold1 = search_acc("1", a)
+    print(flag1)
+    print(money1)
+    print(record1)
+    print(stock_hold1)
+    flag2 = buy_stock("1", a, "600019", 200)
+    flag3 = buy_stock("1", a, "600519", 200)
+    flag4 = sell_stock("1", a, "600019", 100)
+    search_acc("1", a)
+    flag5, money2, record2, stock_hold2 = search_acc("1", a)
+    print(flag5)
+    print(money2)
+    print(record2)
+    print(stock_hold2)
+
+
+if __name__ == '__main__':
+    trade();
